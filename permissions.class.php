@@ -3,8 +3,8 @@
 * Classname: Permissions
 * Author: adistoe
 * Website: www.adistoe.ch
-* Version: 1.02
-* Last Update: Tuesday, 10 February 2015
+* Version: 1.03
+* Last Update: Thursday, 21 May 2015
 * 
 * 
 * Copyright by adistoe | All rights reserved.
@@ -17,6 +17,7 @@
 * admin.login		| This is a permission
 * admin.*			| This is a "superpermission" -> Grants every permission with admin.something
 * 
+* *					| This is the superpermission for ALL permissions!
 * 
 * Example for a newssystem:
 * 
@@ -67,8 +68,8 @@ class Permissions{
 		return true;
 	}
 	
-	//Check permission & superpermission (.*)
-	function HasPermission($permission){		
+	//Check permission & superpermission (*)
+	function HasPermission($permission){
 		$qrycheck = $this->Database->query("SELECT * FROM user_groups AS ug
 											JOIN groups AS g ON ug.GID = g.GID
 											JOIN group_permissions AS gp ON g.GID = gp.GID
@@ -76,7 +77,7 @@ class Permissions{
 											WHERE ug.UID = ".$this->UID);
 											
 		while($check = $qrycheck->fetch_object()){
-			if (preg_match('/^'.str_replace('.*', '', $check->name).'/', $permission) == true){
+			if (preg_match('/^'.str_replace('*', '', $check->name).'/', $permission) == true){
 				return true;
 			}
 		}
