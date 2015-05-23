@@ -3,7 +3,7 @@
 * Classname: Permissions
 * Author: adistoe
 * Website: www.adistoe.ch
-* Version: 1.04
+* Version: 1.05
 * Last Update: Saturday, 23 May 2015
 * 
 * 
@@ -48,23 +48,46 @@ class Permissions{
 		}
 	}
 	
-	//Add new permission
-	function AddPermission($name, $description){
+	//Create group
+	function CreateGroup($name){
 		$name = $this->Database->real_escape_string(htmlspecialchars($name));
-		$description = $this->Database->real_escape_string(htmlspecialchars($description));
-		if ($this->Database->query("INSERT INTO permissions(name, description) VALUES('$name','$description')")){
-			return true;
+		$qrycheck = $this->Database->query("SELECT * FROM groups WHERE name = '$name'");
+		$check = $qrycheck->num_rows;
+		
+		//Deny double create
+		if ($check == 0){
+			if ($this->Database->query("INSERT INTO groups(name) VALUES('$name')")){
+				return true;
+			}
+			else{
+				return false;
+			}
 		}
 		else{
 			return false;
 		}
 	}
 	
-	//Create group
-	function CreateGroup($name){
-		$name = $this->Database->real_escape_string(htmlspecialchars($name));
-		if ($this->Database->query("INSERT INTO groups(name) VALUES('$name')")){
-			return true;
+	//Create permission
+	function CreatePermission($name, $description){
+		//Deny from empty creation
+		if (strlen($name) == 0 || strlen($description) == 0){
+			return false;
+		}
+		
+		$name = $this->Database->real_escape_string($name);
+		$description = $this->Database->real_escape_string(htmlspecialchars($description));
+		$qrycheck = $this->Database->query("SELECT * FROM permissions WHERE name = '$name'");
+		$check = $qrycheck->num_rows;
+		
+		//Deny double create
+		if ($check == 0){
+			if ($this->Database->query("INSERT INTO permissions(name, description) VALUES('$name','$description')")){
+				return true;
+			}
+			else{
+				return false;
+			}
 		}
 		else{
 			return false;
@@ -74,16 +97,24 @@ class Permissions{
 	//Delete group
 	function DeleteGroup($gid){
 		$gid = $this->Database->real_escape_string($gid);
-		if (!$this->Database->query("DELETE FROM user_groups WHERE GID = $gid")){
+		$qrycheck = $this->Database->query("SELECT * FROM groups WHERE GID = $gid");
+		$check = $qrycheck->num_rows;
+		
+		if ($check > 0){
+			if (!$this->Database->query("DELETE FROM user_groups WHERE GID = $gid")){
+				return false;
+			}
+			if (!$this->Database->query("DELETE FROM group_permissions WHERE GID = $gid")){
+				return false;
+			}
+			if (!$this->Database->query("DELETE FROM groups WHERE GID = $gid")){
+				return false;
+			}
+			return true;
+		}
+		else{
 			return false;
 		}
-		if (!$this->Database->query("DELETE FROM group_permissions WHERE GID = $gid")){
-			return false;
-		}
-		if (!$this->Database->query("DELETE FROM groups WHERE GID = $gid")){
-			return false;
-		}
-		return true;
 	}
 	
 	//Delete permission
@@ -107,8 +138,12 @@ class Permissions{
 		
 		//Deny double grant
 		if ($check == 0){
-			$this->Database->query("INSERT INTO group_permissions(GID,PID) VALUES($gid,$permission)");
-			return true;
+			if ($this->Database->query("INSERT INTO group_permissions(GID,PID) VALUES($gid,$permission)")){
+				return true;
+			}
+			else{
+				return false;
+			}
 		}
 		else{
 			return false;
@@ -146,8 +181,13 @@ class Permissions{
 	//Revoke permission from group
 	function RevokePermission($gid, $permission){
 		$gid = $this->Database->real_escape_string($gid);
-		$this->Database->query("DELETE FROM group_permissions WHERE GID = $gid AND PID = $permission");
-		return true;
+		$permission = $this->Database->real_escape_string($permission);
+		if ($this->Database->query("DELETE FROM group_permissions WHERE GID = $gid AND PID = $permission")){
+			return true;
+		}
+		else{
+			return false;
+		}
 	}
 }
 ?>
