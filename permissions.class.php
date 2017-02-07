@@ -2,9 +2,9 @@
 /*
 * Classname: Permissions
 * Author: adistoe
-* Website: www.adistoe.ch
-* Version: 1.05
-* Last Update: Saturday, 23 May 2015
+* Website: http://www.adistoe.ch
+* Version: 1.06
+* Last Update: Tuesday, 07 February 2017
 * 
 * 
 * Copyright by adistoe | All rights reserved.
