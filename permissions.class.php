@@ -3,8 +3,8 @@
  * Classname: Permissions
  * Author: adistoe
  * Website: https://www.adistoe.ch
- * Version: 1.1
- * Last Update: Wednesday, 27 September 2017
+ * Version: 1.2
+ * Last Update: Tuesday, 03 October 2017
  * Description:
  * Permissions is a simple class to manage user rights with groups.
  *
@@ -35,6 +35,111 @@ class Permissions
     {
         $this->db = $pdo;
         $this->UID = $uid;
+    }
+
+    /**
+     * Get permissions which are not granted to the given group
+     *
+     * @param int $gid ID of the group to get the missing permissions from
+     *
+     * @return string[] Returns all permissions which are not granted to the given group
+     */
+    public function getGroupMissingPermissions($gid) {
+        $permissions = Array();
+        $stmt = $this->db->prepare('
+            SELECT
+                p.PID,
+                p.name,
+                description
+            FROM ' . $this->tables['permissions'] . ' AS p
+                LEFT JOIN ' . $this->tables['group_permissions'] . ' AS gp ON p.PID = gp.PID
+                LEFT JOIN ' . $this->tables['groups'] . ' AS g ON gp.GID = g.GID
+            WHERE g.GID <> :GID OR g.GID IS NULL
+        ');
+
+        $stmt->bindParam(':GID', $gid);
+        $stmt->execute();
+
+        while ($row = $stmt->fetch()) {
+            $permissions[$row['PID']] = $row;
+
+            // Correct encoding where necessary
+            $permissions[$row['PID']]['name'] = utf8_encode($row['name']);
+            $permissions[$row['PID']]['description'] = utf8_encode($row['description']);
+        }
+
+        return $permissions;
+    }
+
+    /**
+     * Get group permissions
+     *
+     * @param int $gid ID of the group to get the permissions from
+     *
+     * @return string[] Returns all permissions of the given group
+     */
+    public function getGroupPermissions($gid) {
+        $permissions = Array();
+        $stmt = $this->db->prepare('
+            SELECT
+                p.PID,
+                p.name,
+                description
+            FROM ' . $this->tables['groups'] . ' AS g
+                JOIN ' . $this->tables['group_permissions'] . ' AS gp ON g.GID = gp.GID
+                JOIN ' . $this->tables['permissions'] . ' AS p ON gp.PID = p.PID
+            WHERE g.GID = :GID
+        ');
+
+        $stmt->bindParam(':GID', $gid);
+        $stmt->execute();
+
+        while ($row = $stmt->fetch()) {
+            $permissions[$row['PID']] = $row;
+
+            // Correct encoding where necessary
+            $permissions[$row['PID']]['name'] = utf8_encode($row['name']);
+            $permissions[$row['PID']]['description'] = utf8_encode($row['description']);
+        }
+
+        return $permissions;
+    }
+
+    /**
+     * Get groups
+     *
+     * @return string[] Returns all groups
+     */
+    public function getGroups() {
+            $groups = Array();
+
+            foreach ($this->db->query('SELECT * FROM ' . $this->tables['groups']) as $row) {
+                $groups[$row['GID']] = $row;
+
+                // Correct encoding where necessary
+                $groups[$row['GID']]['name'] = utf8_encode($row['name']);
+            }
+
+            return $groups;
+    }
+
+    /**
+     * Get permissions
+     *
+     * @return string[] Returns all permissions
+     */
+    public function getPermissions() {
+            $permissions = Array();
+
+            foreach ($this->db->query('SELECT * FROM ' . $this->tables['permissions']) as $row) {
+                $permissions[$row['PID']] = $row;
+
+                // Correct encoding where necessary
+                $permissions[$row['PID']]['name'] = utf8_encode($row['name']);
+                $permissions[$row['PID']]['description'] = utf8_encode($row['description']);
+            }
+
+            return $permissions;
     }
 
     /**
@@ -98,6 +203,44 @@ class Permissions
             if ($stmt->rowCount() > 0) {
                 return true;
             }
+        }
+
+        return false;
+    }
+
+    /**
+     * Edit a group
+     *
+     * @param int $gid ID of the group to edit
+     * @param string $name Name of the group to edit
+     *
+     * @return boolean Returns if the group was edited
+     */
+    public function groupEdit($gid, $name)
+    {
+        if ($gid == '' || $name == '') {
+            return false;
+        }
+
+        $stmt = $this->db->prepare('SELECT GID FROM ' . $this->tables['groups'] . ' WHERE GID <> :GID AND name = :name');
+
+        $stmt->bindParam(':GID', $gid);
+        $stmt->bindParam(':name', $name);
+        $stmt->execute();
+
+        // Check if the group already exists
+        if ($row = $stmt->fetchObject()) {
+            return false;
+        }
+
+        $stmt = $this->db->prepare('UPDATE ' . $this->tables['groups'] . ' SET name = :name WHERE GID = :GID');
+
+        $stmt->bindParam(':GID', $gid);
+        $stmt->bindParam(':name', $name);
+
+        // Edit the group
+        if ($stmt->execute()) {
+            return true;
         }
 
         return false;
@@ -260,6 +403,46 @@ class Permissions
             if ($stmt->rowCount() > 0) {
                 return true;
             }
+        }
+
+        return false;
+    }
+
+    /**
+     * Edit a permission
+     *
+     * @param int $pid ID of the permission to edit
+     * @param string $name Name of the permission to edit
+     * @param string $description Description of the permission to edit
+     *
+     * @return boolean Returns if the permission was edited
+     */
+    public function permissionEdit($pid, $name, $description)
+    {
+        if ($pid == '' || $name == '' || $description == '') {
+            return false;
+        }
+
+        $stmt = $this->db->prepare('SELECT GID FROM ' . $this->tables['permissions'] . ' WHERE PID <> :PID AND name = :name');
+
+        $stmt->bindParam(':PID', $pid);
+        $stmt->bindParam(':name', $name);
+        $stmt->execute();
+
+        // Check if the group already exists
+        if ($row = $stmt->fetchObject()) {
+            return false;
+        }
+
+        $stmt = $this->db->prepare('UPDATE ' . $this->tables['permissions'] . ' SET name = :name, description = :description WHERE PID = :PID');
+
+        $stmt->bindParam(':PID', $pid);
+        $stmt->bindParam(':name', $name);
+        $stmt->bindParam(':description', $description);
+
+        // Edit the group
+        if ($stmt->execute()) {
+            return true;
         }
 
         return false;
