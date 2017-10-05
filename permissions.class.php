@@ -3,7 +3,7 @@
  * Classname: Permissions
  * Author: adistoe
  * Website: https://www.adistoe.ch
- * Version: 1.2.1
+ * Version: 1.2.3
  * Creation date: Wednesday, 11 February 2015
  * Last Update: Thursday, 5 October 2017
  * Description: Permissions is a simple class to manage user rights with groups.
@@ -104,7 +104,7 @@ class Permissions
     public function getGroups() {
             $groups = Array();
 
-            foreach ($this->db->query('SELECT * FROM ' . $this->tables['groups']) as $row) {
+            foreach ($this->db->query('SELECT * FROM ' . $this->tables['groups'], PDO::FETCH_ASSOC) as $row) {
                 $groups[$row['GID']] = $row;
 
                 // Correct encoding where necessary
@@ -124,7 +124,7 @@ class Permissions
     public function getPermissions() {
             $permissions = Array();
 
-            foreach ($this->db->query('SELECT * FROM ' . $this->tables['permissions']) as $row) {
+            foreach ($this->db->query('SELECT * FROM ' . $this->tables['permissions'], PDO::FETCH_ASSOC) as $row) {
                 $permissions[$row['PID']] = $row;
 
                 // Correct encoding where necessary
@@ -188,6 +188,62 @@ class Permissions
         }
 
         return $groups;
+    }
+
+    /**
+     * Get permissions to which the user is not associated to
+     *
+     * @param int $uid ID of the user to get the missing permissions from
+     *
+     * @return string[] Returns all permissions to which the user is not associated to
+     */
+    public function getUserMissingPermissions($uid) {
+        $userPermissions = $this->getUserPermissions($uid);
+        $permissions = $this->getPermissions();
+
+        foreach($permissions as $key => $permission) {
+            if (array_key_exists($key, $userPermissions)) {
+                unset($permissions[$key]);
+            }
+        }
+
+        return $permissions;
+    }
+
+    /**
+     * Get user permissions
+     *
+     * @param int $uid ID of the user to get the permissions from
+     *
+     * @return string[] Returns all permissions of the given user
+     */
+    public function getUserPermissions($uid) {
+        $permissions = Array();
+        $stmt = $this->db->prepare('
+            SELECT DISTINCT
+                p.PID,
+                name,
+                description
+            FROM ' . $this->tables['user_groups'] . ' AS ug
+                JOIN ' . $this->tables['group_permissions'] . ' AS gp ON ug.GID = gp.GID
+                JOIN ' . $this->tables['permissions'] . ' AS p ON gp.PID = p.PID
+            WHERE ug.UID = :UID
+        ');
+
+        $stmt->bindParam(':UID', $uid);
+        $stmt->execute();
+
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $permissions[$row['PID']] = $row;
+
+            // Correct encoding where necessary
+            if ($this->utf8_conversion) {
+                $permissions[$row['PID']]['name'] = utf8_encode($row['name']);
+                $permissions[$row['PID']]['description'] = utf8_encode($row['description']);
+            }
+        }
+
+        return $permissions;
     }
 
     /**
@@ -365,7 +421,7 @@ class Permissions
     }
 
     /**
-     * Check if the user / group has a permission
+     * Check if the user has a permission
      *
      * @param string $name Permission name to check
      * @param int $uid ID of the user to check, current user as default
@@ -401,7 +457,7 @@ class Permissions
     }
 
     /**
-     * Check if the user / group has at least one of the given permissions
+     * Check if the user has at least one of the given permissions
      *
      * @return boolean Returns if the user has at least one of the the permissions
      */
@@ -421,7 +477,7 @@ class Permissions
     }
 
     /**
-     * Check if the user / group has some specific permissions
+     * Check if the user has some specific permissions
      *
      * @return boolean Returns if the user has the permission
      */
@@ -438,6 +494,42 @@ class Permissions
         }
 
         return true;
+    }
+
+    /**
+     * Check if the group is a supergroup (superpermission)
+     *
+     * @return boolean Returns if the group is a supergroup
+     */
+    public function isSupergroup($gid)
+    {
+        $permissions = $this->getGroupPermissions($gid);
+
+        foreach ($permissions as $permission) {
+            if ($permission['name'] == '*') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if the user is a superuser (superpermission)
+     *
+     * @return boolean Returns if the user is a superuser
+     */
+    public function isSuperuser($uid = 0)
+    {
+        if ($uid == 0) {
+            $uid = $this->UID;
+        }
+
+        if ($this->hasPermission('*', $uid)) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
