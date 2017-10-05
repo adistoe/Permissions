@@ -4,9 +4,8 @@
  * Author: adistoe
  * Website: https://www.adistoe.ch
  * Version: 1.2
- * Last Update: Tuesday, 03 October 2017
- * Description:
- * Permissions is a simple class to manage user rights with groups.
+ * Last Update: Wednesday, 4 October 2017
+ * Description: Permissions is a simple class to manage user rights with groups.
  *
  * Copyright by adistoe | All rights reserved.
  */
@@ -14,6 +13,9 @@ class Permissions
 {
     private $uid;
     private $db;
+
+    // Set to true, if all in- and outputs should be encoded / decoded with utf8
+    private $utf8_conversion = true;
 
     // Database tables - Can be renamed (Must be the same as the tables in the database!)
     private $tables = Array(
@@ -64,8 +66,10 @@ class Permissions
             $permissions[$row['PID']] = $row;
 
             // Correct encoding where necessary
-            $permissions[$row['PID']]['name'] = utf8_encode($row['name']);
-            $permissions[$row['PID']]['description'] = utf8_encode($row['description']);
+            if ($this->utf8_conversion) {
+                $permissions[$row['PID']]['name'] = utf8_encode($row['name']);
+                $permissions[$row['PID']]['description'] = utf8_encode($row['description']);
+            }
         }
 
         return $permissions;
@@ -98,8 +102,10 @@ class Permissions
             $permissions[$row['PID']] = $row;
 
             // Correct encoding where necessary
-            $permissions[$row['PID']]['name'] = utf8_encode($row['name']);
-            $permissions[$row['PID']]['description'] = utf8_encode($row['description']);
+            if ($this->utf8_conversion) {
+                $permissions[$row['PID']]['name'] = utf8_encode($row['name']);
+                $permissions[$row['PID']]['description'] = utf8_encode($row['description']);
+            }
         }
 
         return $permissions;
@@ -117,7 +123,9 @@ class Permissions
                 $groups[$row['GID']] = $row;
 
                 // Correct encoding where necessary
-                $groups[$row['GID']]['name'] = utf8_encode($row['name']);
+                if ($this->utf8_conversion) {
+                    $groups[$row['GID']]['name'] = utf8_encode($row['name']);
+                }
             }
 
             return $groups;
@@ -135,11 +143,79 @@ class Permissions
                 $permissions[$row['PID']] = $row;
 
                 // Correct encoding where necessary
-                $permissions[$row['PID']]['name'] = utf8_encode($row['name']);
-                $permissions[$row['PID']]['description'] = utf8_encode($row['description']);
+                if ($this->utf8_conversion) {
+                    $permissions[$row['PID']]['name'] = utf8_encode($row['name']);
+                    $permissions[$row['PID']]['description'] = utf8_encode($row['description']);
+                }
             }
 
             return $permissions;
+    }
+
+    /**
+     * Get user groups
+     *
+     * @param int $uid ID of the user to get the groups from
+     *
+     * @return string[] Returns all groups of the given user
+     */
+    public function getUserGroups($uid) {
+        $groups = Array();
+        $stmt = $this->db->prepare('
+            SELECT
+                g.GID,
+                name
+            FROM ' . $this->tables['user_groups'] . ' AS ug
+                JOIN ' . $this->tables['groups'] . ' AS g ON ug.GID = g.GID
+            WHERE ug.UID = :UID
+        ');
+
+        $stmt->bindParam(':UID', $uid);
+        $stmt->execute();
+
+        while ($row = $stmt->fetch()) {
+            $groups[$row['GID']] = $row;
+
+            // Correct encoding where necessary
+            if ($this->utf8_conversion) {
+                $groups[$row['GID']]['name'] = utf8_encode($row['name']);
+            }
+        }
+
+        return $groups;
+    }
+
+    /**
+     * Get groups to which the user is not associated to
+     *
+     * @param int $uid ID of the user to get the missing groups from
+     *
+     * @return string[] Returns all groups to which the user is not associated to
+     */
+    public function getUserMissingGroups($uid) {
+        $groups = Array();
+        $stmt = $this->db->prepare('
+            SELECT
+                g.GID,
+                name
+            FROM ' . $this->tables['groups'] . ' AS g
+                LEFT JOIN ' . $this->tables['user_groups'] . ' AS ug ON g.GID = ug.GID
+            WHERE ug.UID <> :UID OR ug.UID IS NULL
+        ');
+
+        $stmt->bindParam(':UID', $uid);
+        $stmt->execute();
+
+        while ($row = $stmt->fetch()) {
+            $groups[$row['GID']] = $row;
+
+            // Correct encoding where necessary
+            if ($this->utf8_conversion) {
+                $groups[$row['GID']]['name'] = utf8_encode($row['name']);
+            }
+        }
+
+        return $groups;
     }
 
     /**
@@ -152,6 +228,11 @@ class Permissions
     public function groupCreate($name)
     {
         if (strlen($name) > 0) {
+            // Correct encoding where necessary
+            if ($this->utf8_conversion) {
+                $name = utf8_decode($name);
+            }
+
             $stmt = $this->db->prepare('SELECT GID FROM ' . $this->tables['groups'] . ' WHERE name = :name');
 
             $stmt->bindParam(':name', $name);
@@ -220,6 +301,11 @@ class Permissions
     {
         if ($gid == '' || $name == '') {
             return false;
+        }
+
+        // Correct encoding where necessary
+        if ($this->utf8_conversion) {
+            $name = utf8_decode($name);
         }
 
         $stmt = $this->db->prepare('SELECT GID FROM ' . $this->tables['groups'] . ' WHERE GID <> :GID AND name = :name');
@@ -343,6 +429,46 @@ class Permissions
     }
 
     /**
+     * Check if the user / group has at least one of the given permissions
+     *
+     * @return boolean Returns if the user has at least one of the the permissions
+     */
+    public function hasPermissionFromSelection()
+    {
+        $args = func_get_args();
+
+        if (count($args) > 0) {
+            foreach ($args as $arg) {
+                if ($this->hasPermission($arg)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if the user / group has some specific permissions
+     *
+     * @return boolean Returns if the user has the permission
+     */
+    public function hasPermissions()
+    {
+        $args = func_get_args();
+
+        if (count($args) > 0) {
+            foreach ($args as $arg) {
+                if (!$this->hasPermission($arg)) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Create a permission
      *
      * @param string $name Name for the new permission
@@ -353,6 +479,12 @@ class Permissions
     public function permissionCreate($name, $description)
     {
         if (strlen($name) > 0 && strlen($description) > 0) {
+            // Correct encoding where necessary
+            if ($this->utf8_conversion) {
+                $name = utf8_decode($name);
+                $description = utf8_decode($description);
+            }
+
             $stmt = $this->db->prepare('SELECT * FROM ' . $this->tables['permissions'] . ' WHERE name = :name');
 
             $stmt->bindParam(':name', $name);
@@ -421,6 +553,12 @@ class Permissions
     {
         if ($pid == '' || $name == '' || $description == '') {
             return false;
+        }
+
+        // Correct encoding where necessary
+        if ($this->utf8_conversion) {
+            $name = utf8_decode($name);
+            $description = utf8_decode($description);
         }
 
         $stmt = $this->db->prepare('SELECT GID FROM ' . $this->tables['permissions'] . ' WHERE PID <> :PID AND name = :name');
