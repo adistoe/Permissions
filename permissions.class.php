@@ -48,28 +48,12 @@ class Permissions
      * @return string[] Returns all permissions which are not granted to the given group
      */
     public function getGroupMissingPermissions($gid) {
-        $permissions = Array();
-        $stmt = $this->db->prepare('
-            SELECT
-                p.PID,
-                p.name,
-                description
-            FROM ' . $this->tables['permissions'] . ' AS p
-                LEFT JOIN ' . $this->tables['group_permissions'] . ' AS gp ON p.PID = gp.PID
-                LEFT JOIN ' . $this->tables['groups'] . ' AS g ON gp.GID = g.GID
-            WHERE g.GID <> :GID OR g.GID IS NULL
-        ');
+        $groupPermissions = $this->getGroupPermissions($gid);
+        $permissions = $this->getPermissions();
 
-        $stmt->bindParam(':GID', $gid);
-        $stmt->execute();
-
-        while ($row = $stmt->fetch()) {
-            $permissions[$row['PID']] = $row;
-
-            // Correct encoding where necessary
-            if ($this->utf8_conversion) {
-                $permissions[$row['PID']]['name'] = utf8_encode($row['name']);
-                $permissions[$row['PID']]['description'] = utf8_encode($row['description']);
+        foreach($permissions as $key => $permission) {
+            if (array_key_exists($key, $groupPermissions)) {
+                unset($permissions[$key]);
             }
         }
 
@@ -99,7 +83,7 @@ class Permissions
         $stmt->bindParam(':GID', $gid);
         $stmt->execute();
 
-        while ($row = $stmt->fetch()) {
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $permissions[$row['PID']] = $row;
 
             // Correct encoding where necessary
@@ -174,7 +158,7 @@ class Permissions
         $stmt->bindParam(':UID', $uid);
         $stmt->execute();
 
-        while ($row = $stmt->fetch()) {
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $groups[$row['GID']] = $row;
 
             // Correct encoding where necessary
@@ -194,25 +178,12 @@ class Permissions
      * @return string[] Returns all groups to which the user is not associated to
      */
     public function getUserMissingGroups($uid) {
-        $groups = Array();
-        $stmt = $this->db->prepare('
-            SELECT
-                g.GID,
-                name
-            FROM ' . $this->tables['groups'] . ' AS g
-                LEFT JOIN ' . $this->tables['user_groups'] . ' AS ug ON g.GID = ug.GID
-            WHERE ug.UID <> :UID OR ug.UID IS NULL
-        ');
+        $userGroups = $this->getUserGroups($uid);
+        $groups = $this->getGroups();
 
-        $stmt->bindParam(':UID', $uid);
-        $stmt->execute();
-
-        while ($row = $stmt->fetch()) {
-            $groups[$row['GID']] = $row;
-
-            // Correct encoding where necessary
-            if ($this->utf8_conversion) {
-                $groups[$row['GID']]['name'] = utf8_encode($row['name']);
+        foreach($groups as $key => $group) {
+            if (array_key_exists($key, $userGroups)) {
+                unset($groups[$key]);
             }
         }
 
