@@ -3,8 +3,9 @@
  * Classname: Permissions
  * Author: adistoe
  * Website: https://www.adistoe.ch
- * Version: 1.2
- * Last Update: Wednesday, 4 October 2017
+ * Version: 1.2.1
+ * Creation date: Wednesday, 11 February 2015
+ * Last Update: Thursday, 5 October 2017
  * Description: Permissions is a simple class to manage user rights with groups.
  *
  * Copyright by adistoe | All rights reserved.
@@ -420,7 +421,7 @@ class Permissions
         $stmt->execute();
 
         while ($row = $stmt->fetchObject()) {
-            if (preg_match('/^' . str_replace('*', '', $row->name) . '/', $name) == true) {
+            if (preg_match('/^' . str_replace('*', '.*', str_replace('.', '\.', $row->name)) . '$/', $name) == true) {
                 return true;
             }
         }
