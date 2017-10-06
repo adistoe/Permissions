@@ -5,7 +5,7 @@
  * Website: https://www.adistoe.ch
  * Version: 1.2.3
  * Creation date: Wednesday, 11 February 2015
- * Last Update: Thursday, 5 October 2017
+ * Last Update: Friday, 6 October 2017
  * Description: Permissions is a simple class to manage user rights with groups.
  *
  * Copyright by adistoe | All rights reserved.
@@ -497,7 +497,32 @@ class Permissions
     }
 
     /**
+     * Check if the user is in the given group
+     *
+     * @param int $gid ID of the group to check
+     * @param int $uid ID of the user to check
+     *
+     * @return boolean Returns if the user is in the given group
+     */
+    public function isInGroup($gid, $uid = 0)
+    {
+        if ($uid == 0) {
+            $uid = $this->UID;
+        }
+
+        $groups = $this->getUserGroups($uid);
+
+        if (array_key_exists($gid, $groups)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Check if the group is a supergroup (superpermission)
+     *
+     * @param int $gid ID of the group to check
      *
      * @return boolean Returns if the group is a supergroup
      */
@@ -515,7 +540,27 @@ class Permissions
     }
 
     /**
+     * Check if the permission is the superpermission
+     *
+     * @param int $pid ID of the permission to check
+     *
+     * @return boolean Returns if it's the superpermission
+     */
+    public function isSuperpermission($pid)
+    {
+        $permissions = $this->getPermissions();
+
+        if ($permissions[$pid]['name'] == '*') {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Check if the user is a superuser (superpermission)
+     *
+     * @param int $uid ID of the user to check
      *
      * @return boolean Returns if the user is a superuser
      */
