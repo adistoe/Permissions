@@ -5,7 +5,7 @@
  * Website: https://www.adistoe.ch
  * Version: 1.2.3
  * Creation date: Wednesday, 11 February 2015
- * Last Update: Thursday, 6 October 2017
+ * Last Update: Friday, 6 October 2017
  * Description: Permissions is a simple class to manage user rights with groups.
  *
  * Copyright by adistoe | All rights reserved.
