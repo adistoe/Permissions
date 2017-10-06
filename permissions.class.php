@@ -5,7 +5,7 @@
  * Website: https://www.adistoe.ch
  * Version: 1.2.3
  * Creation date: Wednesday, 11 February 2015
- * Last Update: Friday, 6 October 2017
+ * Last Update: Thursday, 6 October 2017
  * Description: Permissions is a simple class to manage user rights with groups.
  *
  * Copyright by adistoe | All rights reserved.
@@ -117,6 +117,34 @@ class Permissions
     }
 
     /**
+     * Get permission by id
+     *
+     * @return string[] Returns the given permission
+     */
+    public function getPermission($pid) {
+            $permission = Array();
+
+            $stmt = $this->db->prepare('SELECT * FROM ' . $this->tables['permissions'] . ' WHERE PID = :PID');
+
+            $stmt->bindParam(':PID', $pid);
+            $stmt->execute();
+
+            if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $permission = $row;
+
+                // Correct encoding where necessary
+                if ($this->utf8_conversion) {
+                    $permission['name'] = utf8_encode($row['name']);
+                    $permission['description'] = utf8_encode($row['description']);
+                }
+
+                return $permission;
+            }
+
+            return false;
+    }
+
+    /**
      * Get permissions
      *
      * @return string[] Returns all permissions
@@ -135,6 +163,30 @@ class Permissions
             }
 
             return $permissions;
+    }
+
+    /**
+     * Get all permissions to which the user has access to
+     *
+     * @param int $uid ID of the user to get the permissions from
+     *
+     * @return string[] Returns all permissions of the given user to which the user has access to
+     */
+    public function getUserAccessPermissions($uid = 0) {
+        if ($uid == 0) {
+            $uid = $this->UID;
+        }
+
+        $permissions = $this->getPermissions();
+        $userAccessPermissions = Array();
+
+        foreach ($permissions as $permission) {
+            if ($this->hasPermission($permission['name'], $uid)) {
+                $userAccessPermissions[$permission['PID']] = $permission;
+            }
+        }
+
+        return $userAccessPermissions;
     }
 
     /**
@@ -197,7 +249,11 @@ class Permissions
      *
      * @return string[] Returns all permissions to which the user is not associated to
      */
-    public function getUserMissingPermissions($uid) {
+    public function getUserMissingPermissions($uid = 0) {
+        if ($uid == 0) {
+            $uid = $this->UID;
+        }
+
         $userPermissions = $this->getUserPermissions($uid);
         $permissions = $this->getPermissions();
 
@@ -217,7 +273,11 @@ class Permissions
      *
      * @return string[] Returns all permissions of the given user
      */
-    public function getUserPermissions($uid) {
+    public function getUserPermissions($uid = 0) {
+        if ($uid == 0) {
+            $uid = $this->UID;
+        }
+
         $permissions = Array();
         $stmt = $this->db->prepare('
             SELECT DISTINCT
