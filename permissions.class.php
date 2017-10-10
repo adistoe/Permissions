@@ -5,7 +5,7 @@
  * Website: https://www.adistoe.ch
  * Version: 1.2.3
  * Creation date: Wednesday, 11 February 2015
- * Last Update: Friday, 6 October 2017
+ * Last Update: Tuesday, 10 October 2017
  * Description: Permissions is a simple class to manage user rights with groups.
  *
  * Copyright by adistoe | All rights reserved.
@@ -14,9 +14,6 @@ class Permissions
 {
     private $uid;
     private $db;
-
-    // Set to true, if all in- and outputs should be encoded / decoded with utf8
-    private $utf8_conversion = true;
 
     // Database tables - Can be renamed (Must be the same as the tables in the database!)
     private $tables = Array(
@@ -85,12 +82,6 @@ class Permissions
 
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $permissions[$row['PID']] = $row;
-
-            // Correct encoding where necessary
-            if ($this->utf8_conversion) {
-                $permissions[$row['PID']]['name'] = utf8_encode($row['name']);
-                $permissions[$row['PID']]['description'] = utf8_encode($row['description']);
-            }
         }
 
         return $permissions;
@@ -106,11 +97,6 @@ class Permissions
 
             foreach ($this->db->query('SELECT * FROM ' . $this->tables['groups'], PDO::FETCH_ASSOC) as $row) {
                 $groups[$row['GID']] = $row;
-
-                // Correct encoding where necessary
-                if ($this->utf8_conversion) {
-                    $groups[$row['GID']]['name'] = utf8_encode($row['name']);
-                }
             }
 
             return $groups;
@@ -130,15 +116,7 @@ class Permissions
             $stmt->execute();
 
             if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                $permission = $row;
-
-                // Correct encoding where necessary
-                if ($this->utf8_conversion) {
-                    $permission['name'] = utf8_encode($row['name']);
-                    $permission['description'] = utf8_encode($row['description']);
-                }
-
-                return $permission;
+                return $row;
             }
 
             return false;
@@ -154,12 +132,6 @@ class Permissions
 
             foreach ($this->db->query('SELECT * FROM ' . $this->tables['permissions'], PDO::FETCH_ASSOC) as $row) {
                 $permissions[$row['PID']] = $row;
-
-                // Correct encoding where necessary
-                if ($this->utf8_conversion) {
-                    $permissions[$row['PID']]['name'] = utf8_encode($row['name']);
-                    $permissions[$row['PID']]['description'] = utf8_encode($row['description']);
-                }
             }
 
             return $permissions;
@@ -212,11 +184,6 @@ class Permissions
 
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $groups[$row['GID']] = $row;
-
-            // Correct encoding where necessary
-            if ($this->utf8_conversion) {
-                $groups[$row['GID']]['name'] = utf8_encode($row['name']);
-            }
         }
 
         return $groups;
@@ -295,12 +262,6 @@ class Permissions
 
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $permissions[$row['PID']] = $row;
-
-            // Correct encoding where necessary
-            if ($this->utf8_conversion) {
-                $permissions[$row['PID']]['name'] = utf8_encode($row['name']);
-                $permissions[$row['PID']]['description'] = utf8_encode($row['description']);
-            }
         }
 
         return $permissions;
@@ -316,11 +277,6 @@ class Permissions
     public function groupCreate($name)
     {
         if (strlen($name) > 0) {
-            // Correct encoding where necessary
-            if ($this->utf8_conversion) {
-                $name = utf8_decode($name);
-            }
-
             $stmt = $this->db->prepare('SELECT GID FROM ' . $this->tables['groups'] . ' WHERE name = :name');
 
             $stmt->bindParam(':name', $name);
@@ -389,11 +345,6 @@ class Permissions
     {
         if ($gid == '' || $name == '') {
             return false;
-        }
-
-        // Correct encoding where necessary
-        if ($this->utf8_conversion) {
-            $name = utf8_decode($name);
         }
 
         $stmt = $this->db->prepare('SELECT GID FROM ' . $this->tables['groups'] . ' WHERE GID <> :GID AND name = :name');
@@ -648,12 +599,6 @@ class Permissions
     public function permissionCreate($name, $description)
     {
         if (strlen($name) > 0 && strlen($description) > 0) {
-            // Correct encoding where necessary
-            if ($this->utf8_conversion) {
-                $name = utf8_decode($name);
-                $description = utf8_decode($description);
-            }
-
             $stmt = $this->db->prepare('SELECT * FROM ' . $this->tables['permissions'] . ' WHERE name = :name');
 
             $stmt->bindParam(':name', $name);
@@ -722,12 +667,6 @@ class Permissions
     {
         if ($pid == '' || $name == '' || $description == '') {
             return false;
-        }
-
-        // Correct encoding where necessary
-        if ($this->utf8_conversion) {
-            $name = utf8_decode($name);
-            $description = utf8_decode($description);
         }
 
         $stmt = $this->db->prepare('SELECT GID FROM ' . $this->tables['permissions'] . ' WHERE PID <> :PID AND name = :name');
