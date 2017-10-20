@@ -5,7 +5,7 @@
  * Website: https://www.adistoe.ch
  * Version: 1.2.3
  * Creation date: Wednesday, 11 February 2015
- * Last Update: Tuesday, 10 October 2017
+ * Last Update: Friday, 20 October 2017
  * Description: Permissions is a simple class to manage user rights with groups.
  *
  * Copyright by adistoe | All rights reserved.
@@ -15,7 +15,7 @@ class Permissions
     private $uid;
     private $db;
 
-    // Database tables - Can be renamed (Must be the same as the tables in the database!)
+    // Database tables - Can be renamed to use in own database
     private $tables = Array(
         'group_permissions' => 'group_permissions',
         'groups'            => 'groups',
@@ -42,7 +42,7 @@ class Permissions
      *
      * @param int $gid ID of the group to get the missing permissions from
      *
-     * @return string[] Returns all permissions which are not granted to the given group
+     * @return string[] Returns permissions which the group does not have
      */
     public function getGroupMissingPermissions($gid) {
         $groupPermissions = $this->getGroupPermissions($gid);
@@ -72,8 +72,10 @@ class Permissions
                 p.name,
                 description
             FROM ' . $this->tables['groups'] . ' AS g
-                JOIN ' . $this->tables['group_permissions'] . ' AS gp ON g.GID = gp.GID
-                JOIN ' . $this->tables['permissions'] . ' AS p ON gp.PID = p.PID
+                JOIN ' . $this->tables['group_permissions'] . ' AS gp
+                    ON g.GID = gp.GID
+                JOIN ' . $this->tables['permissions'] . ' AS p
+                    ON gp.PID = p.PID
             WHERE g.GID = :GID
         ');
 
@@ -95,7 +97,14 @@ class Permissions
     public function getGroups() {
             $groups = Array();
 
-            foreach ($this->db->query('SELECT * FROM ' . $this->tables['groups'], PDO::FETCH_ASSOC) as $row) {
+            foreach (
+                $this->db->query('
+                    SELECT
+                        *
+                    FROM ' . $this->tables['groups'],
+                    PDO::FETCH_ASSOC
+                ) as $row
+            ) {
                 $groups[$row['GID']] = $row;
             }
 
@@ -110,7 +119,13 @@ class Permissions
     public function getPermission($pid) {
             $permission = Array();
 
-            $stmt = $this->db->prepare('SELECT * FROM ' . $this->tables['permissions'] . ' WHERE PID = :PID');
+            $stmt = $this->db->prepare('
+                SELECT
+                    *
+                FROM ' . $this->tables['permissions'] . '
+                WHERE
+                    PID = :PID
+            ');
 
             $stmt->bindParam(':PID', $pid);
             $stmt->execute();
@@ -130,7 +145,14 @@ class Permissions
     public function getPermissions() {
             $permissions = Array();
 
-            foreach ($this->db->query('SELECT * FROM ' . $this->tables['permissions'], PDO::FETCH_ASSOC) as $row) {
+            foreach (
+                $this->db->query('
+                    SELECT
+                        *
+                    FROM ' . $this->tables['permissions'],
+                    PDO::FETCH_ASSOC
+                ) as $row
+            ) {
                 $permissions[$row['PID']] = $row;
             }
 
@@ -142,7 +164,7 @@ class Permissions
      *
      * @param int $uid ID of the user to get the permissions from
      *
-     * @return string[] Returns all permissions of the given user to which the user has access to
+     * @return string[] Returns all permissions to which the user has access to
      */
     public function getUserAccessPermissions($uid = 0) {
         if ($uid == 0) {
@@ -175,7 +197,8 @@ class Permissions
                 g.GID,
                 name
             FROM ' . $this->tables['user_groups'] . ' AS ug
-                JOIN ' . $this->tables['groups'] . ' AS g ON ug.GID = g.GID
+                JOIN ' . $this->tables['groups'] . ' AS g
+                    ON ug.GID = g.GID
             WHERE ug.UID = :UID
         ');
 
@@ -252,8 +275,10 @@ class Permissions
                 name,
                 description
             FROM ' . $this->tables['user_groups'] . ' AS ug
-                JOIN ' . $this->tables['group_permissions'] . ' AS gp ON ug.GID = gp.GID
-                JOIN ' . $this->tables['permissions'] . ' AS p ON gp.PID = p.PID
+                JOIN ' . $this->tables['group_permissions'] . ' AS gp
+                    ON ug.GID = gp.GID
+                JOIN ' . $this->tables['permissions'] . ' AS p
+                    ON gp.PID = p.PID
             WHERE ug.UID = :UID
         ');
 
@@ -277,7 +302,13 @@ class Permissions
     public function groupCreate($name)
     {
         if (strlen($name) > 0) {
-            $stmt = $this->db->prepare('SELECT GID FROM ' . $this->tables['groups'] . ' WHERE name = :name');
+            $stmt = $this->db->prepare('
+                SELECT
+                    GID
+                FROM ' . $this->tables['groups'] . '
+                WHERE
+                    name = :name
+                ');
 
             $stmt->bindParam(':name', $name);
             $stmt->execute();
@@ -287,7 +318,13 @@ class Permissions
                 return false;
             }
 
-            $stmt = $this->db->prepare('INSERT INTO ' . $this->tables['groups'] . '(name) VALUES(:name)');
+            $stmt = $this->db->prepare('
+                INSERT INTO ' . $this->tables['groups'] . '(
+                    name
+                ) VALUES(
+                    :name
+                )
+            ');
 
             $stmt->bindParam(':name', $name);
 
@@ -315,8 +352,10 @@ class Permissions
                 ug,
                 gp
             FROM ' . $this->tables['groups'] . ' AS g
-                LEFT JOIN ' . $this->tables['user_groups'] . ' AS ug ON g.GID = ug.GID
-                LEFT JOIN ' . $this->tables['group_permissions'] . ' AS gp ON g.GID = gp.GID
+                LEFT JOIN ' . $this->tables['user_groups'] . ' AS ug
+                    ON g.GID = ug.GID
+                LEFT JOIN ' . $this->tables['group_permissions'] . ' AS gp
+                    ON g.GID = gp.GID
             WHERE g.GID = :GID
         ');
 
@@ -347,7 +386,14 @@ class Permissions
             return false;
         }
 
-        $stmt = $this->db->prepare('SELECT GID FROM ' . $this->tables['groups'] . ' WHERE GID <> :GID AND name = :name');
+        $stmt = $this->db->prepare('
+            SELECT
+                GID
+            FROM ' . $this->tables['groups'] . '
+            WHERE
+                GID <> :GID AND
+                name = :name
+            ');
 
         $stmt->bindParam(':GID', $gid);
         $stmt->bindParam(':name', $name);
@@ -358,7 +404,12 @@ class Permissions
             return false;
         }
 
-        $stmt = $this->db->prepare('UPDATE ' . $this->tables['groups'] . ' SET name = :name WHERE GID = :GID');
+        $stmt = $this->db->prepare('
+            UPDATE ' . $this->tables['groups'] . ' SET
+                name = :name
+            WHERE
+                GID = :GID
+        ');
 
         $stmt->bindParam(':GID', $gid);
         $stmt->bindParam(':name', $name);
@@ -381,7 +432,14 @@ class Permissions
      */
     public function groupPermissionGrant($gid, $pid)
     {
-        $stmt = $this->db->prepare('SELECT PID FROM ' . $this->tables['group_permissions'] . ' WHERE GID = :GID AND PID = :PID');
+        $stmt = $this->db->prepare('
+            SELECT
+                PID
+            FROM ' . $this->tables['group_permissions'] . '
+            WHERE
+                GID = :GID AND
+                PID = :PID
+            ');
 
         $stmt->bindParam(':GID', $gid);
         $stmt->bindParam(':PID', $pid);
@@ -392,7 +450,15 @@ class Permissions
             return false;
         }
 
-        $stmt = $this->db->prepare('INSERT INTO ' . $this->tables['group_permissions'] . '(GID, PID) VALUES(:GID, :PID)');
+        $stmt = $this->db->prepare('
+            INSERT INTO ' . $this->tables['group_permissions'] . '(
+                GID,
+                PID
+            ) VALUES(
+                :GID,
+                :PID
+            )
+        ');
 
         $stmt->bindParam(':GID', $gid);
         $stmt->bindParam(':PID', $pid);
@@ -415,7 +481,12 @@ class Permissions
      */
     public function groupPermissionRevoke($gid, $pid)
     {
-        $stmt = $this->db->prepare('DELETE FROM ' . $this->tables ['group_permissions']. ' WHERE GID = :GID AND PID = :PID');
+        $stmt = $this->db->prepare('
+            DELETE FROM ' . $this->tables ['group_permissions']. '
+            WHERE
+                GID = :GID AND
+                PID = :PID
+            ');
 
         $stmt->bindParam(':GID', $gid);
         $stmt->bindParam(':PID', $pid);
@@ -449,9 +520,12 @@ class Permissions
             SELECT
                 p.name
             FROM ' . $this->tables['user_groups'] . ' AS ug
-                JOIN ' . $this->tables['groups'] . ' AS g ON ug.GID = g.GID
-                JOIN ' . $this->tables['group_permissions'] . ' AS gp ON g.GID = gp.GID
-                JOIN ' . $this->tables['permissions'] . ' AS p ON gp.PID = p.PID
+                JOIN ' . $this->tables['groups'] . ' AS g
+                    ON ug.GID = g.GID
+                JOIN ' . $this->tables['group_permissions'] . ' AS gp
+                    ON g.GID = gp.GID
+                JOIN ' . $this->tables['permissions'] . ' AS p
+                    ON gp.PID = p.PID
             WHERE ug.UID = :UID
         ');
 
@@ -459,7 +533,21 @@ class Permissions
         $stmt->execute();
 
         while ($row = $stmt->fetchObject()) {
-            if (preg_match('/^' . str_replace('*', '.*', str_replace('.', '\.', $row->name)) . '$/', $name) == true) {
+            if (
+                preg_match(
+                    '/^' .
+                    str_replace(
+                        '*',
+                        '.*',
+                        str_replace(
+                            '.',
+                            '\.',
+                            $row->name
+                        )
+                    ) . '$/',
+                    $name
+                ) == true
+            ) {
                 return true;
             }
         }
@@ -470,7 +558,7 @@ class Permissions
     /**
      * Check if the user has at least one of the given permissions
      *
-     * @return boolean Returns if the user has at least one of the the permissions
+     * @return boolean Returns if the user has at least one of the permissions
      */
     public function hasPermissionFromSelection()
     {
@@ -599,7 +687,13 @@ class Permissions
     public function permissionCreate($name, $description)
     {
         if (strlen($name) > 0 && strlen($description) > 0) {
-            $stmt = $this->db->prepare('SELECT * FROM ' . $this->tables['permissions'] . ' WHERE name = :name');
+            $stmt = $this->db->prepare('
+                SELECT
+                    *
+                FROM ' . $this->tables['permissions'] . '
+                WHERE
+                    name = :name
+            ');
 
             $stmt->bindParam(':name', $name);
             $stmt->execute();
@@ -609,7 +703,15 @@ class Permissions
                 return false;
             }
 
-            $stmt = $this->db->prepare('INSERT INTO ' . $this->tables['permissions'] . '(name, description) VALUES(:name, :description)');
+            $stmt = $this->db->prepare('
+                INSERT INTO ' . $this->tables['permissions'] . '(
+                    name,
+                    description
+                ) VALUES(
+                    :name,
+                    :description
+                )
+            ');
 
             $stmt->bindParam(':name', $name);
             $stmt->bindParam(':description', $description);
@@ -637,7 +739,8 @@ class Permissions
                 p,
                 gp
             FROM ' . $this->tables['permissions'] . ' AS p
-                LEFT JOIN ' . $this->tables['group_permissions'] . ' AS gp ON p.PID = gp.PID
+                LEFT JOIN ' . $this->tables['group_permissions'] . ' AS gp
+                    ON p.PID = gp.PID
             WHERE p.PID = :PID
         ');
 
@@ -669,7 +772,14 @@ class Permissions
             return false;
         }
 
-        $stmt = $this->db->prepare('SELECT GID FROM ' . $this->tables['permissions'] . ' WHERE PID <> :PID AND name = :name');
+        $stmt = $this->db->prepare('
+            SELECT
+                GID
+            FROM ' . $this->tables['permissions'] . '
+            WHERE
+                PID <> :PID AND
+                name = :name
+            ');
 
         $stmt->bindParam(':PID', $pid);
         $stmt->bindParam(':name', $name);
@@ -680,7 +790,13 @@ class Permissions
             return false;
         }
 
-        $stmt = $this->db->prepare('UPDATE ' . $this->tables['permissions'] . ' SET name = :name, description = :description WHERE PID = :PID');
+        $stmt = $this->db->prepare('
+            UPDATE ' . $this->tables['permissions'] . ' SET
+                name = :name,
+                description = :description
+            WHERE
+                PID = :PID
+        ');
 
         $stmt->bindParam(':PID', $pid);
         $stmt->bindParam(':name', $name);
@@ -705,20 +821,42 @@ class Permissions
     public function userGroupAdd($uid, $gid)
     {
         // Get user with given ID
-        $stmt_user = $this->db->prepare('SELECT UID FROM ' . $this->tables['users'] . ' WHERE UID = :UID');
+        $stmt_user = $this->db->prepare('
+            SELECT
+                UID
+            FROM ' . $this->tables['users'] . '
+            WHERE
+                UID = :UID
+        ');
 
         $stmt_user->bindParam(':UID', $uid);
         $stmt_user->execute();
 
         // Get group with given ID
-        $stmt_group = $this->db->prepare('SELECT GID FROM ' . $this->tables['groups'] . ' WHERE GID = :GID');
+        $stmt_group = $this->db->prepare('
+            SELECT
+                GID FROM ' . $this->tables['groups'] . '
+            WHERE
+                GID = :GID
+        ');
 
         $stmt_group->bindParam(':GID', $gid);
         $stmt_group->execute();
 
         // Check if given user and group exists
-        if ($row_user = $stmt_user->fetchObject() && $row_group = $stmt_group->fetchObject()) {
-            $stmt = $this->db->prepare('INSERT INTO ' . $this->tables['user_groups'] . '(UID, GID) VALUES(:UID, :GID)');
+        if (
+            $row_user = $stmt_user->fetchObject() &&
+            $row_group = $stmt_group->fetchObject()
+        ) {
+            $stmt = $this->db->prepare('
+                INSERT INTO ' . $this->tables['user_groups'] . '(
+                    UID,
+                    GID
+                ) VALUES(
+                    :UID,
+                    :GID
+                )
+            ');
 
             $stmt->bindParam(':UID', $uid);
             $stmt->bindParam(':GID', $gid);
@@ -742,7 +880,12 @@ class Permissions
      */
     public function userGroupRemove($uid, $gid)
     {
-        $stmt = $this->db->prepare('DELETE FROM ' . $this->tables['user_groups'] . ' WHERE UID = :UID AND GID = :GID');
+        $stmt = $this->db->prepare('
+            DELETE FROM ' . $this->tables['user_groups'] . '
+            WHERE
+                UID = :UID AND
+                GID = :GID
+        ');
 
         $stmt->bindParam(':UID', $uid);
         $stmt->bindParam(':GID', $gid);
