@@ -3,9 +3,9 @@
  * Classname: Permissions
  * Author: adistoe
  * Website: https://www.adistoe.ch
- * Version: 1.2.3
+ * Version: 1.2.4
  * Creation date: Wednesday, 11 February 2015
- * Last Update: Friday, 20 October 2017
+ * Last Update: Thursday, 02 November 2017
  * Description: Permissions is a simple class to manage user rights with groups.
  *
  * Copyright by adistoe | All rights reserved.
@@ -92,16 +92,20 @@ class Permissions
     /**
      * Get groups
      *
+     * @param string $orderColumn Order results by given column
+     * @param string $orderDirection Order results in given direction
+     *
      * @return string[] Returns all groups
      */
-    public function getGroups() {
+    public function getGroups($orderColumn = 'GID', $orderDirection = 'ASC') {
             $groups = Array();
 
             foreach (
-                $this->db->query('
+                $this->db->query("
                     SELECT
                         *
-                    FROM ' . $this->tables['groups'],
+                    FROM " . $this->tables['groups'] . "
+                    ORDER BY $orderColumn $orderDirection",
                     PDO::FETCH_ASSOC
                 ) as $row
             ) {
@@ -140,16 +144,20 @@ class Permissions
     /**
      * Get permissions
      *
+     * @param string $orderColumn Order results by given column
+     * @param string $orderDirection Order results in given direction
+     *
      * @return string[] Returns all permissions
      */
-    public function getPermissions() {
+    public function getPermissions($orderColumn = 'PID', $orderDirection = 'ASC') {
             $permissions = Array();
 
             foreach (
-                $this->db->query('
+                $this->db->query("
                     SELECT
                         *
-                    FROM ' . $this->tables['permissions'],
+                    FROM " . $this->tables['permissions'] . "
+                    ORDER BY $orderColumn $orderDirection",
                     PDO::FETCH_ASSOC
                 ) as $row
             ) {
@@ -187,20 +195,23 @@ class Permissions
      * Get user groups
      *
      * @param int $uid ID of the user to get the groups from
+     * @param string $orderColumn Order results by given column
+     * @param string $orderDirection Order results in given direction
      *
      * @return string[] Returns all groups of the given user
      */
-    public function getUserGroups($uid) {
+    public function getUserGroups($uid, $orderColumn = 'g.GID', $orderDirection = 'ASC') {
         $groups = Array();
-        $stmt = $this->db->prepare('
+        $stmt = $this->db->prepare("
             SELECT
                 g.GID,
                 name
-            FROM ' . $this->tables['user_groups'] . ' AS ug
-                JOIN ' . $this->tables['groups'] . ' AS g
+            FROM " . $this->tables['user_groups'] . " AS ug
+                JOIN " . $this->tables['groups'] . " AS g
                     ON ug.GID = g.GID
             WHERE ug.UID = :UID
-        ');
+            ORDER BY $orderColumn $orderDirection
+        ");
 
         $stmt->bindParam(':UID', $uid);
         $stmt->execute();
@@ -216,12 +227,14 @@ class Permissions
      * Get groups to which the user is not associated to
      *
      * @param int $uid ID of the user to get the missing groups from
+     * @param string $orderColumn Order results by given column
+     * @param string $orderDirection Order results in given direction
      *
      * @return string[] Returns all groups to which the user is not associated to
      */
-    public function getUserMissingGroups($uid) {
-        $userGroups = $this->getUserGroups($uid);
-        $groups = $this->getGroups();
+    public function getUserMissingGroups($uid, $orderColumn = 'GID', $orderDirection = 'ASC') {
+        $userGroups = $this->getUserGroups($uid, $orderColumn, $orderDirection);
+        $groups = $this->getGroups($orderColumn, $orderDirection);
 
         foreach($groups as $key => $group) {
             if (array_key_exists($key, $userGroups)) {
@@ -236,16 +249,18 @@ class Permissions
      * Get permissions to which the user is not associated to
      *
      * @param int $uid ID of the user to get the missing permissions from
+     * @param string $orderColumn Order results by given column
+     * @param string $orderDirection Order results in given direction
      *
      * @return string[] Returns all permissions to which the user is not associated to
      */
-    public function getUserMissingPermissions($uid = 0) {
+    public function getUserMissingPermissions($uid = 0, $orderColumn = 'PID', $orderDirection = 'ASC') {
         if ($uid == 0) {
             $uid = $this->UID;
         }
 
-        $userPermissions = $this->getUserPermissions($uid);
-        $permissions = $this->getPermissions();
+        $userPermissions = $this->getUserPermissions($uid, 'p.' . $orderColumn, $orderDirection);
+        $permissions = $this->getPermissions($orderColumn, $orderDirection);
 
         foreach($permissions as $key => $permission) {
             if (array_key_exists($key, $userPermissions)) {
@@ -260,27 +275,30 @@ class Permissions
      * Get user permissions
      *
      * @param int $uid ID of the user to get the permissions from
+     * @param string $orderColumn Order results by given column
+     * @param string $orderDirection Order results in given direction
      *
      * @return string[] Returns all permissions of the given user
      */
-    public function getUserPermissions($uid = 0) {
+    public function getUserPermissions($uid = 0, $orderColumn = 'p.PID', $orderDirection = 'ASC') {
         if ($uid == 0) {
             $uid = $this->UID;
         }
 
         $permissions = Array();
-        $stmt = $this->db->prepare('
+        $stmt = $this->db->prepare("
             SELECT DISTINCT
                 p.PID,
                 name,
                 description
-            FROM ' . $this->tables['user_groups'] . ' AS ug
-                JOIN ' . $this->tables['group_permissions'] . ' AS gp
+            FROM " . $this->tables['user_groups'] . " AS ug
+                JOIN " . $this->tables['group_permissions'] . " AS gp
                     ON ug.GID = gp.GID
-                JOIN ' . $this->tables['permissions'] . ' AS p
+                JOIN " . $this->tables['permissions'] . " AS p
                     ON gp.PID = p.PID
             WHERE ug.UID = :UID
-        ');
+            ORDER BY $orderColumn $orderDirection
+        ");
 
         $stmt->bindParam(':UID', $uid);
         $stmt->execute();
