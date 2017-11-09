@@ -5,8 +5,9 @@
  * Website: https://www.adistoe.ch
  * Version: 1.2.4
  * Creation date: Wednesday, 11 February 2015
- * Last Update: Thursday, 02 November 2017
- * Description: Permissions is a simple class to manage user rights with groups.
+ * Last Update: Thursday, 09 November 2017
+ * Description:
+ *    Permissions is a simple class to manage user rights with groups.
  *
  * Copyright by adistoe | All rights reserved.
  */
@@ -149,7 +150,10 @@ class Permissions
      *
      * @return string[] Returns all permissions
      */
-    public function getPermissions($orderColumn = 'PID', $orderDirection = 'ASC') {
+    public function getPermissions(
+        $orderColumn = 'PID',
+        $orderDirection = 'ASC'
+    ) {
             $permissions = Array();
 
             foreach (
@@ -200,7 +204,11 @@ class Permissions
      *
      * @return string[] Returns all groups of the given user
      */
-    public function getUserGroups($uid, $orderColumn = 'g.GID', $orderDirection = 'ASC') {
+    public function getUserGroups(
+        $uid,
+        $orderColumn = 'g.GID',
+        $orderDirection = 'ASC'
+    ) {
         $groups = Array();
         $stmt = $this->db->prepare("
             SELECT
@@ -230,9 +238,14 @@ class Permissions
      * @param string $orderColumn Order results by given column
      * @param string $orderDirection Order results in given direction
      *
-     * @return string[] Returns all groups to which the user is not associated to
+     * @return string[] Returns all groups to which the user
+     *    is not associated to
      */
-    public function getUserMissingGroups($uid, $orderColumn = 'GID', $orderDirection = 'ASC') {
+    public function getUserMissingGroups(
+        $uid,
+        $orderColumn = 'GID',
+        $orderDirection = 'ASC'
+    ) {
         $userGroups = $this->getUserGroups($uid, $orderColumn, $orderDirection);
         $groups = $this->getGroups($orderColumn, $orderDirection);
 
@@ -252,14 +265,23 @@ class Permissions
      * @param string $orderColumn Order results by given column
      * @param string $orderDirection Order results in given direction
      *
-     * @return string[] Returns all permissions to which the user is not associated to
+     * @return string[] Returns all permissions to which the user
+     *    is not associated to
      */
-    public function getUserMissingPermissions($uid = 0, $orderColumn = 'PID', $orderDirection = 'ASC') {
+    public function getUserMissingPermissions(
+        $uid = 0,
+        $orderColumn = 'PID',
+        $orderDirection = 'ASC'
+    ) {
         if ($uid == 0) {
             $uid = $this->UID;
         }
 
-        $userPermissions = $this->getUserPermissions($uid, 'p.' . $orderColumn, $orderDirection);
+        $userPermissions = $this->getUserPermissions(
+            $uid,
+            'p.' . $orderColumn,
+            $orderDirection
+        );
         $permissions = $this->getPermissions($orderColumn, $orderDirection);
 
         foreach($permissions as $key => $permission) {
@@ -280,7 +302,11 @@ class Permissions
      *
      * @return string[] Returns all permissions of the given user
      */
-    public function getUserPermissions($uid = 0, $orderColumn = 'p.PID', $orderDirection = 'ASC') {
+    public function getUserPermissions(
+        $uid = 0,
+        $orderColumn = 'p.PID',
+        $orderDirection = 'ASC'
+    ) {
         if ($uid == 0) {
             $uid = $this->UID;
         }
