@@ -39,6 +39,32 @@ class Permissions
     }
 
     /**
+     * Get group by ID
+     *
+     * @param string $gid ID of the group to get
+     *
+     * @return string[] Returns the group
+     */
+    public function getGroup($gid) {
+        $stmt = $this->db->prepare("
+            SELECT
+                *
+            FROM " . $this->tables['groups'] . "
+            WHERE
+                GID = :GID
+        ");
+
+        $stmt->bindParam(':GID', $gid);
+        $stmt->execute();
+
+        if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            return $row;
+        }
+
+        return false;
+    }
+
+    /**
      * Get permissions which are not granted to the given group
      *
      * @param int $gid ID of the group to get the missing permissions from
@@ -88,32 +114,6 @@ class Permissions
         }
 
         return $permissions;
-    }
-
-    /**
-     * Get group by ID
-     *
-     * @param string $gid ID of the group to get
-     *
-     * @return string[] Returns the group
-     */
-    public function getGroup($gid) {
-            $stmt = $this->db->prepare("
-                SELECT
-                    *
-                FROM " . $this->tables['groups'] . "
-                WHERE
-                    GID = :GID
-            ");
-
-            $stmt->bindParam(':GID', $gid);
-            $stmt->execute();
-
-            if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                return $row;
-            }
-
-            return false;
     }
 
     /**
