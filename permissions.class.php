@@ -3,9 +3,9 @@
  * Classname: Permissions
  * Author: adistoe
  * Website: https://www.adistoe.ch
- * Version: 1.2.4
+ * Version: 1.2.5
  * Creation date: Wednesday, 11 February 2015
- * Last Update: Thursday, 09 November 2017
+ * Last Update: Tuesday, 14 November 2017
  * Description:
  *    Permissions is a simple class to manage user rights with groups.
  *
@@ -88,6 +88,32 @@ class Permissions
         }
 
         return $permissions;
+    }
+
+    /**
+     * Get group by ID
+     *
+     * @param string $gid ID of the group to get
+     *
+     * @return string[] Returns the group
+     */
+    public function getGroup($gid) {
+            $stmt = $this->db->prepare("
+                SELECT
+                    *
+                FROM " . $this->tables['groups'] . "
+                WHERE
+                    GID = :GID
+            ");
+
+            $stmt->bindParam(':GID', $gid);
+            $stmt->execute();
+
+            if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                return $row;
+            }
+
+            return false;
     }
 
     /**
