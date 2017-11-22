@@ -5,7 +5,7 @@
  * Website: https://www.adistoe.ch
  * Version: 1.2.5
  * Creation date: Wednesday, 11 February 2015
- * Last Update: Wednesday, 15 November 2017
+ * Last Update: Wednesday, 22 November 2017
  * Description:
  *    Permissions is a simple class to manage user rights with groups.
  *
@@ -45,7 +45,8 @@ class Permissions
      *
      * @return string[] Returns the group
      */
-    public function getGroup($gid) {
+    public function getGroup($gid)
+    {
         $stmt = $this->db->prepare("
             SELECT
                 *
@@ -71,7 +72,8 @@ class Permissions
      *
      * @return string[] Returns permissions which the group does not have
      */
-    public function getGroupMissingPermissions($gid) {
+    public function getGroupMissingPermissions($gid)
+    {
         $groupPermissions = $this->getGroupPermissions($gid);
         $permissions = $this->getPermissions();
 
@@ -91,7 +93,8 @@ class Permissions
      *
      * @return string[] Returns all permissions of the given group
      */
-    public function getGroupPermissions($gid) {
+    public function getGroupPermissions($gid)
+    {
         $permissions = Array();
         $stmt = $this->db->prepare('
             SELECT
@@ -103,7 +106,8 @@ class Permissions
                     ON g.GID = gp.GID
                 JOIN ' . $this->tables['permissions'] . ' AS p
                     ON gp.PID = p.PID
-            WHERE g.GID = :GID
+            WHERE
+                g.GID = :GID
         ');
 
         $stmt->bindParam(':GID', $gid);
@@ -124,7 +128,8 @@ class Permissions
      *
      * @return string[] Returns all groups
      */
-    public function getGroups($orderColumn = 'GID', $orderDirection = 'ASC') {
+    public function getGroups($orderColumn = 'GID', $orderDirection = 'ASC')
+    {
             $groups = Array();
 
             foreach (
@@ -147,7 +152,8 @@ class Permissions
      *
      * @return string[] Returns the given permission
      */
-    public function getPermission($pid) {
+    public function getPermission($pid)
+    {
             $permission = Array();
 
             $stmt = $this->db->prepare('
@@ -179,7 +185,8 @@ class Permissions
     public function getPermissions(
         $orderColumn = 'PID',
         $orderDirection = 'ASC'
-    ) {
+    )
+    {
             $permissions = Array();
 
             foreach (
@@ -204,7 +211,8 @@ class Permissions
      *
      * @return string[] Returns all permissions to which the user has access to
      */
-    public function getUserAccessPermissions($uid = 0) {
+    public function getUserAccessPermissions($uid = 0)
+    {
         if ($uid == 0) {
             $uid = $this->UID;
         }
@@ -234,7 +242,8 @@ class Permissions
         $uid,
         $orderColumn = 'g.GID',
         $orderDirection = 'ASC'
-    ) {
+    )
+    {
         $groups = Array();
         $stmt = $this->db->prepare("
             SELECT
@@ -243,7 +252,8 @@ class Permissions
             FROM " . $this->tables['user_groups'] . " AS ug
                 JOIN " . $this->tables['groups'] . " AS g
                     ON ug.GID = g.GID
-            WHERE ug.UID = :UID
+            WHERE
+                ug.UID = :UID
             ORDER BY $orderColumn $orderDirection
         ");
 
@@ -271,7 +281,8 @@ class Permissions
         $uid,
         $orderColumn = 'GID',
         $orderDirection = 'ASC'
-    ) {
+    )
+    {
         $userGroups = $this->getUserGroups($uid, $orderColumn, $orderDirection);
         $groups = $this->getGroups($orderColumn, $orderDirection);
 
@@ -298,7 +309,8 @@ class Permissions
         $uid = 0,
         $orderColumn = 'PID',
         $orderDirection = 'ASC'
-    ) {
+    )
+    {
         if ($uid == 0) {
             $uid = $this->UID;
         }
@@ -332,7 +344,8 @@ class Permissions
         $uid = 0,
         $orderColumn = 'p.PID',
         $orderDirection = 'ASC'
-    ) {
+    )
+    {
         if ($uid == 0) {
             $uid = $this->UID;
         }
@@ -348,7 +361,8 @@ class Permissions
                     ON ug.GID = gp.GID
                 JOIN " . $this->tables['permissions'] . " AS p
                     ON gp.PID = p.PID
-            WHERE ug.UID = :UID
+            WHERE
+                ug.UID = :UID
             ORDER BY $orderColumn $orderDirection
         ");
 
@@ -426,7 +440,8 @@ class Permissions
                     ON g.GID = ug.GID
                 LEFT JOIN ' . $this->tables['group_permissions'] . ' AS gp
                     ON g.GID = gp.GID
-            WHERE g.GID = :GID
+            WHERE
+                g.GID = :GID
         ');
 
         $stmt->bindParam(':GID', $gid);
@@ -596,7 +611,8 @@ class Permissions
                     ON g.GID = gp.GID
                 JOIN ' . $this->tables['permissions'] . ' AS p
                     ON gp.PID = p.PID
-            WHERE ug.UID = :UID
+            WHERE
+                ug.UID = :UID
         ');
 
         $stmt->bindParam(':UID', $uid);
@@ -811,7 +827,8 @@ class Permissions
             FROM ' . $this->tables['permissions'] . ' AS p
                 LEFT JOIN ' . $this->tables['group_permissions'] . ' AS gp
                     ON p.PID = gp.PID
-            WHERE p.PID = :PID
+            WHERE
+                p.PID = :PID
         ');
 
         $stmt->bindParam(':PID', $pid);
