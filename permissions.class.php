@@ -1,11 +1,10 @@
 <?php
 /**
- * Classname: Permissions
+ * Class: Permissions
  * Author: adistoe
  * Website: https://www.adistoe.ch
- * Version: 1.2.5
- * Creation date: Wednesday, 11 February 2015
- * Last Update: Wednesday, 22 November 2017
+ * Version: 1.2.6
+ * Last Update: Thursday, 30 November 2017
  * Description:
  *    Permissions is a simple class to manage user rights with groups.
  *
@@ -36,6 +35,47 @@ class Permissions
     {
         $this->db = $pdo;
         $this->UID = $uid;
+    }
+
+    /**
+     * Create database tables to use the class
+     * Needs to be executed once at the beginning of using permissions
+     */
+    public function createTables() {
+        if ($this->db->query("
+            CREATE TABLE " . $this->tables['groups'] . "(
+                GID INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+                name VARCHAR(100) NOT NULL
+            );
+
+            CREATE TABLE " . $this->tables['permissions'] . "(
+                PID INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+                name VARCHAR(100) NOT NULL,
+                description VARCHAR(200) NOT NULL
+            );
+
+            CREATE TABLE " . $this->tables['group_permissions'] . "(
+                GID INT NOT NULL,
+                PID INT NOT NULL,
+                PRIMARY KEY (GID, PID),
+                CONSTRAINT GP_FK_GID FOREIGN KEY (GID)
+                    REFERENCES " . $this->tables['groups'] . " (GID),
+                CONSTRAINT GP_FK_PID FOREIGN KEY (PID)
+                    REFERENCES " . $this->tables['permissions'] . " (PID)
+            );
+
+            CREATE TABLE " . $this->tables['user_groups'] . "(
+                UID INT NOT NULL,
+                GID INT NOT NULL,
+                PRIMARY KEY (UID, GID),
+                CONSTRAINT UG_FK_GID FOREIGN KEY (GID)
+                    REFERENCES " . $this->tables['groups'] . " (GID)
+            );
+        ")) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
