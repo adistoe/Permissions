@@ -3,8 +3,8 @@
  * Class: Permissions
  * Author: adistoe
  * Website: https://www.adistoe.ch
- * Version: 1.2.6
- * Last Update: Thursday, 30 November 2017
+ * Version: 1.2.7
+ * Last Update: Tuesday, 12 December 2017
  * Description:
  *    Permissions is a simple class to manage user rights with groups.
  *
@@ -165,26 +165,32 @@ class Permissions
      *
      * @param string $orderColumn Order results by given column
      * @param string $orderDirection Order results in given direction
+     * @param string $limit Show only given amount of records
      *
      * @return string[] Returns all groups
      */
-    public function getGroups($orderColumn = 'GID', $orderDirection = 'ASC')
+    public function getGroups(
+        $orderColumn = 'GID',
+        $orderDirection = 'ASC',
+        $limit = ''
+    )
     {
-            $groups = Array();
+        $limit = ($limit != '' ? 'LIMIT ' . $limit : '');
+        $groups = Array();
 
-            foreach (
-                $this->db->query("
-                    SELECT
-                        *
-                    FROM " . $this->tables['groups'] . "
-                    ORDER BY $orderColumn $orderDirection",
-                    PDO::FETCH_ASSOC
-                ) as $row
-            ) {
-                $groups[$row['GID']] = $row;
-            }
+        foreach (
+            $this->db->query("
+                SELECT
+                    *
+                FROM " . $this->tables['groups'] . "
+                ORDER BY $orderColumn $orderDirection $limit",
+                PDO::FETCH_ASSOC
+            ) as $row
+        ) {
+            $groups[$row['GID']] = $row;
+        }
 
-            return $groups;
+        return $groups;
     }
 
     /**
@@ -194,24 +200,24 @@ class Permissions
      */
     public function getPermission($pid)
     {
-            $permission = Array();
+        $permission = Array();
 
-            $stmt = $this->db->prepare('
-                SELECT
-                    *
-                FROM ' . $this->tables['permissions'] . '
-                WHERE
-                    PID = :PID
-            ');
+        $stmt = $this->db->prepare('
+            SELECT
+                *
+            FROM ' . $this->tables['permissions'] . '
+            WHERE
+                PID = :PID
+        ');
 
-            $stmt->bindParam(':PID', $pid);
-            $stmt->execute();
+        $stmt->bindParam(':PID', $pid);
+        $stmt->execute();
 
-            if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                return $row;
-            }
+        if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            return $row;
+        }
 
-            return false;
+        return false;
     }
 
     /**
@@ -219,29 +225,32 @@ class Permissions
      *
      * @param string $orderColumn Order results by given column
      * @param string $orderDirection Order results in given direction
+     * @param string $limit Show only given amount of records
      *
      * @return string[] Returns all permissions
      */
     public function getPermissions(
         $orderColumn = 'PID',
-        $orderDirection = 'ASC'
+        $orderDirection = 'ASC',
+        $limit = ''
     )
     {
-            $permissions = Array();
+        $limit = ($limit != '' ? 'LIMIT ' . $limit : '');
+        $permissions = Array();
 
-            foreach (
-                $this->db->query("
-                    SELECT
-                        *
-                    FROM " . $this->tables['permissions'] . "
-                    ORDER BY $orderColumn $orderDirection",
-                    PDO::FETCH_ASSOC
-                ) as $row
-            ) {
-                $permissions[$row['PID']] = $row;
-            }
+        foreach (
+            $this->db->query("
+                SELECT
+                    *
+                FROM " . $this->tables['permissions'] . "
+                ORDER BY $orderColumn $orderDirection $limit",
+                PDO::FETCH_ASSOC
+            ) as $row
+        ) {
+            $permissions[$row['PID']] = $row;
+        }
 
-            return $permissions;
+        return $permissions;
     }
 
     /**
@@ -275,15 +284,18 @@ class Permissions
      * @param int $uid ID of the user to get the groups from
      * @param string $orderColumn Order results by given column
      * @param string $orderDirection Order results in given direction
+     * @param string $limit Show only given amount of records
      *
      * @return string[] Returns all groups of the given user
      */
     public function getUserGroups(
         $uid,
         $orderColumn = 'g.GID',
-        $orderDirection = 'ASC'
+        $orderDirection = 'ASC',
+        $limit = ''
     )
     {
+        $limit = ($limit != '' ? 'LIMIT ' . $limit : '');
         $groups = Array();
         $stmt = $this->db->prepare("
             SELECT
@@ -294,7 +306,7 @@ class Permissions
                     ON ug.GID = g.GID
             WHERE
                 ug.UID = :UID
-            ORDER BY $orderColumn $orderDirection
+            ORDER BY $orderColumn $orderDirection $limit
         ");
 
         $stmt->bindParam(':UID', $uid);
@@ -313,6 +325,7 @@ class Permissions
      * @param int $uid ID of the user to get the missing groups from
      * @param string $orderColumn Order results by given column
      * @param string $orderDirection Order results in given direction
+     * @param string $limit Show only given amount of records
      *
      * @return string[] Returns all groups to which the user
      *    is not associated to
@@ -320,11 +333,18 @@ class Permissions
     public function getUserMissingGroups(
         $uid,
         $orderColumn = 'GID',
-        $orderDirection = 'ASC'
+        $orderDirection = 'ASC',
+        $limit = ''
     )
     {
-        $userGroups = $this->getUserGroups($uid, $orderColumn, $orderDirection);
-        $groups = $this->getGroups($orderColumn, $orderDirection);
+        $limit = ($limit != '' ? 'LIMIT ' . $limit : '');
+        $userGroups = $this->getUserGroups(
+            $uid,
+            $orderColumn,
+            $orderDirection,
+            $limit
+        );
+        $groups = $this->getGroups($orderColumn, $orderDirection, $limit);
 
         foreach($groups as $key => $group) {
             if (array_key_exists($key, $userGroups)) {
@@ -341,6 +361,7 @@ class Permissions
      * @param int $uid ID of the user to get the missing permissions from
      * @param string $orderColumn Order results by given column
      * @param string $orderDirection Order results in given direction
+     * @param string $limit Show only given amount of records
      *
      * @return string[] Returns all permissions to which the user
      *    is not associated to
@@ -348,9 +369,12 @@ class Permissions
     public function getUserMissingPermissions(
         $uid = 0,
         $orderColumn = 'PID',
-        $orderDirection = 'ASC'
+        $orderDirection = 'ASC',
+        $limit = ''
     )
     {
+        $limit = ($limit != '' ? 'LIMIT ' . $limit : '');
+
         if ($uid == 0) {
             $uid = $this->UID;
         }
@@ -360,7 +384,11 @@ class Permissions
             'p.' . $orderColumn,
             $orderDirection
         );
-        $permissions = $this->getPermissions($orderColumn, $orderDirection);
+        $permissions = $this->getPermissions(
+            $orderColumn,
+            $orderDirection,
+            $limit
+        );
 
         foreach($permissions as $key => $permission) {
             if (array_key_exists($key, $userPermissions)) {
@@ -377,15 +405,19 @@ class Permissions
      * @param int $uid ID of the user to get the permissions from
      * @param string $orderColumn Order results by given column
      * @param string $orderDirection Order results in given direction
+     * @param string $limit Show only given amount of records
      *
      * @return string[] Returns all permissions of the given user
      */
     public function getUserPermissions(
         $uid = 0,
         $orderColumn = 'p.PID',
-        $orderDirection = 'ASC'
+        $orderDirection = 'ASC',
+        $limit = ''
     )
     {
+        $limit = ($limit != '' ? 'LIMIT ' . $limit : '');
+
         if ($uid == 0) {
             $uid = $this->UID;
         }
@@ -403,7 +435,7 @@ class Permissions
                     ON gp.PID = p.PID
             WHERE
                 ug.UID = :UID
-            ORDER BY $orderColumn $orderDirection
+            ORDER BY $orderColumn $orderDirection $limit
         ");
 
         $stmt->bindParam(':UID', $uid);
