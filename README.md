@@ -17,17 +17,11 @@ The ```$userID``` is simply the ID of the user of your usertable.
 You can simply fill in ```0``` if you don't have an ID to use the functions without being logged in for example. If you do so, you need to pass an ID directly to the functions on call.
 
 ## Configuration
-You can change the table names in the ```$tables```-array to use your own naming style.
-Don't forget to change the table names in the .sql script too!
+You can change the table prefix and suffix in the to use your own naming style.
 
 ```php
-private $tables = Array(
-    'group_permissions' => 'group_permissions',
-    'groups'            => 'groups',
-    'permissions'       => 'permissions',
-    'user_groups'       => 'user_groups',
-    'users'             => 'user'
-);
+private $prefix = 'example_';
+private $suffix = '_table';
 ```
 
 ## Usage
