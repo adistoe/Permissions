@@ -24,6 +24,8 @@ private $prefix = 'example_';
 private $suffix = '_table';
 ```
 
+The example above would result in table names like "example_permissions_table".
+
 ## Usage
 
 ### Superpermission
