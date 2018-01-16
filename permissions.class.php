@@ -3,8 +3,8 @@
  * Class: Permissions
  * Author: adistoe
  * Website: https://www.adistoe.ch
- * Version: 1.2.7
- * Last Update: Tuesday, 12 December 2017
+ * Version: 1.2.8
+ * Last Update: Tuesday, 16 January 2018
  * Description:
  *    Permissions is a simple class to manage user rights with groups.
  *
@@ -16,13 +16,8 @@ class Permissions
     private $db;
 
     // Database tables - Can be renamed to use in own database
-    private $tables = Array(
-        'group_permissions' => 'group_permissions',
-        'groups'            => 'groups',
-        'permissions'       => 'permissions',
-        'user_groups'       => 'user_groups',
-        'users'             => 'user'
-    );
+    private $prefix = '';
+    private $suffix = '';
 
     /**
      * Constructor
@@ -42,36 +37,36 @@ class Permissions
      * Needs to be executed once at the beginning of using permissions
      */
     public function createTables() {
-        if ($this->db->query("
-            CREATE TABLE " . $this->tables['groups'] . "(
+        if ($this->db->query('
+            CREATE TABLE ' . $this->prefix . 'groups' . $this->suffix . '(
                 GID INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
                 name VARCHAR(100) NOT NULL
             );
 
-            CREATE TABLE " . $this->tables['permissions'] . "(
+            CREATE TABLE ' . $this->prefix . 'permissions' . $this->suffix . '(
                 PID INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
                 name VARCHAR(100) NOT NULL,
                 description VARCHAR(200) NOT NULL
             );
 
-            CREATE TABLE " . $this->tables['group_permissions'] . "(
+            CREATE TABLE ' . $this->prefix . 'group_permissions' . $this->suffix . '(
                 GID INT NOT NULL,
                 PID INT NOT NULL,
                 PRIMARY KEY (GID, PID),
                 CONSTRAINT GP_FK_GID FOREIGN KEY (GID)
-                    REFERENCES " . $this->tables['groups'] . " (GID),
+                    REFERENCES ' . $this->prefix . 'groups' . $this->suffix . ' (GID),
                 CONSTRAINT GP_FK_PID FOREIGN KEY (PID)
-                    REFERENCES " . $this->tables['permissions'] . " (PID)
+                    REFERENCES ' . $this->prefix . 'permissions' . $this->suffix . ' (PID)
             );
 
-            CREATE TABLE " . $this->tables['user_groups'] . "(
+            CREATE TABLE ' . $this->prefix . 'user_groups' . $this->suffix . '(
                 UID INT NOT NULL,
                 GID INT NOT NULL,
                 PRIMARY KEY (UID, GID),
                 CONSTRAINT UG_FK_GID FOREIGN KEY (GID)
-                    REFERENCES " . $this->tables['groups'] . " (GID)
+                    REFERENCES ' . $this->prefix . 'groups' . $this->suffix . ' (GID)
             );
-        ")) {
+        ')) {
             return true;
         }
 
@@ -87,13 +82,13 @@ class Permissions
      */
     public function getGroup($gid)
     {
-        $stmt = $this->db->prepare("
+        $stmt = $this->db->prepare('
             SELECT
                 *
-            FROM " . $this->tables['groups'] . "
+            FROM ' . $this->prefix . 'groups' . $this->suffix . '
             WHERE
                 GID = :GID
-        ");
+        ');
 
         $stmt->bindParam(':GID', $gid);
         $stmt->execute();
@@ -141,10 +136,10 @@ class Permissions
                 p.PID,
                 p.name,
                 description
-            FROM ' . $this->tables['groups'] . ' AS g
-                JOIN ' . $this->tables['group_permissions'] . ' AS gp
+            FROM ' . $this->prefix . 'groups' . $this->suffix . ' AS g
+                JOIN ' . $this->prefix . 'group_permissions' . $this->suffix . ' AS gp
                     ON g.GID = gp.GID
-                JOIN ' . $this->tables['permissions'] . ' AS p
+                JOIN ' . $this->prefix . 'permissions' . $this->suffix . ' AS p
                     ON gp.PID = p.PID
             WHERE
                 g.GID = :GID
@@ -182,7 +177,7 @@ class Permissions
             $this->db->query("
                 SELECT
                     *
-                FROM " . $this->tables['groups'] . "
+                FROM " . $this->prefix . "groups" . $this->suffix . "
                 ORDER BY $orderColumn $orderDirection $limit",
                 PDO::FETCH_ASSOC
             ) as $row
@@ -205,7 +200,7 @@ class Permissions
         $stmt = $this->db->prepare('
             SELECT
                 *
-            FROM ' . $this->tables['permissions'] . '
+            FROM ' . $this->prefix . 'permissions' . $this->suffix . '
             WHERE
                 PID = :PID
         ');
@@ -242,7 +237,7 @@ class Permissions
             $this->db->query("
                 SELECT
                     *
-                FROM " . $this->tables['permissions'] . "
+                FROM " . $this->prefix . "permissions" . $this->suffix . "
                 ORDER BY $orderColumn $orderDirection $limit",
                 PDO::FETCH_ASSOC
             ) as $row
@@ -301,8 +296,8 @@ class Permissions
             SELECT
                 g.GID,
                 name
-            FROM " . $this->tables['user_groups'] . " AS ug
-                JOIN " . $this->tables['groups'] . " AS g
+            FROM " . $this->prefix . "user_groups" . $this->suffix . " AS ug
+                JOIN " . $this->prefix . "groups" . $this->suffix . " AS g
                     ON ug.GID = g.GID
             WHERE
                 ug.UID = :UID
@@ -428,10 +423,10 @@ class Permissions
                 p.PID,
                 name,
                 description
-            FROM " . $this->tables['user_groups'] . " AS ug
-                JOIN " . $this->tables['group_permissions'] . " AS gp
+            FROM " . $this->prefix . "user_groups" . $this->suffix . " AS ug
+                JOIN " . $this->prefix . "group_permissions" . $this->suffix . " AS gp
                     ON ug.GID = gp.GID
-                JOIN " . $this->tables['permissions'] . " AS p
+                JOIN " . $this->prefix . "permissions" . $this->suffix . " AS p
                     ON gp.PID = p.PID
             WHERE
                 ug.UID = :UID
@@ -461,7 +456,7 @@ class Permissions
             $stmt = $this->db->prepare('
                 SELECT
                     GID
-                FROM ' . $this->tables['groups'] . '
+                FROM ' . $this->prefix . 'groups' . $this->suffix . '
                 WHERE
                     name = :name
                 ');
@@ -475,7 +470,7 @@ class Permissions
             }
 
             $stmt = $this->db->prepare('
-                INSERT INTO ' . $this->tables['groups'] . '(
+                INSERT INTO ' . $this->prefix . 'groups' . $this->suffix . '(
                     name
                 ) VALUES(
                     :name
@@ -507,10 +502,10 @@ class Permissions
                 g,
                 ug,
                 gp
-            FROM ' . $this->tables['groups'] . ' AS g
-                LEFT JOIN ' . $this->tables['user_groups'] . ' AS ug
+            FROM ' . $this->prefix . 'groups' . $this->suffix . ' AS g
+                LEFT JOIN ' . $this->prefix . 'user_groups' . $this->suffix . ' AS ug
                     ON g.GID = ug.GID
-                LEFT JOIN ' . $this->tables['group_permissions'] . ' AS gp
+                LEFT JOIN ' . $this->prefix . 'group_permissions' . $this->suffix . ' AS gp
                     ON g.GID = gp.GID
             WHERE
                 g.GID = :GID
@@ -546,7 +541,7 @@ class Permissions
         $stmt = $this->db->prepare('
             SELECT
                 GID
-            FROM ' . $this->tables['groups'] . '
+            FROM ' . $this->prefix . 'groups' . $this->suffix . '
             WHERE
                 GID <> :GID AND
                 name = :name
@@ -562,7 +557,7 @@ class Permissions
         }
 
         $stmt = $this->db->prepare('
-            UPDATE ' . $this->tables['groups'] . ' SET
+            UPDATE ' . $this->prefix . 'groups' . $this->suffix . ' SET
                 name = :name
             WHERE
                 GID = :GID
@@ -592,7 +587,7 @@ class Permissions
         $stmt = $this->db->prepare('
             SELECT
                 PID
-            FROM ' . $this->tables['group_permissions'] . '
+            FROM ' . $this->prefix . 'group_permissions' . $this->suffix . '
             WHERE
                 GID = :GID AND
                 PID = :PID
@@ -608,7 +603,7 @@ class Permissions
         }
 
         $stmt = $this->db->prepare('
-            INSERT INTO ' . $this->tables['group_permissions'] . '(
+            INSERT INTO ' . $this->prefix . 'group_permissions' . $this->suffix . '(
                 GID,
                 PID
             ) VALUES(
@@ -639,7 +634,7 @@ class Permissions
     public function groupPermissionRevoke($gid, $pid)
     {
         $stmt = $this->db->prepare('
-            DELETE FROM ' . $this->tables ['group_permissions']. '
+            DELETE FROM ' . $this->prefix . 'group_permissions' . $this->suffix . '
             WHERE
                 GID = :GID AND
                 PID = :PID
@@ -676,12 +671,12 @@ class Permissions
         $stmt = $this->db->prepare('
             SELECT
                 p.name
-            FROM ' . $this->tables['user_groups'] . ' AS ug
-                JOIN ' . $this->tables['groups'] . ' AS g
+            FROM ' . $this->prefix . 'user_groups' . $this->suffix . ' AS ug
+                JOIN ' . $this->prefix . 'groups' . $this->suffix . ' AS g
                     ON ug.GID = g.GID
-                JOIN ' . $this->tables['group_permissions'] . ' AS gp
+                JOIN ' . $this->prefix . 'group_permissions' . $this->suffix . ' AS gp
                     ON g.GID = gp.GID
-                JOIN ' . $this->tables['permissions'] . ' AS p
+                JOIN ' . $this->prefix . 'permissions' . $this->suffix . ' AS p
                     ON gp.PID = p.PID
             WHERE
                 ug.UID = :UID
@@ -848,7 +843,7 @@ class Permissions
             $stmt = $this->db->prepare('
                 SELECT
                     *
-                FROM ' . $this->tables['permissions'] . '
+                FROM ' . $this->prefix . 'permissions' . $this->suffix . '
                 WHERE
                     name = :name
             ');
@@ -862,7 +857,7 @@ class Permissions
             }
 
             $stmt = $this->db->prepare('
-                INSERT INTO ' . $this->tables['permissions'] . '(
+                INSERT INTO ' . $this->prefix . 'permissions' . $this->suffix . '(
                     name,
                     description
                 ) VALUES(
@@ -896,8 +891,8 @@ class Permissions
             DELETE
                 p,
                 gp
-            FROM ' . $this->tables['permissions'] . ' AS p
-                LEFT JOIN ' . $this->tables['group_permissions'] . ' AS gp
+            FROM ' . $this->prefix . 'permissions' . $this->suffix . ' AS p
+                LEFT JOIN ' . $this->prefix . 'group_permissions' . $this->suffix . ' AS gp
                     ON p.PID = gp.PID
             WHERE
                 p.PID = :PID
@@ -934,7 +929,7 @@ class Permissions
         $stmt = $this->db->prepare('
             SELECT
                 GID
-            FROM ' . $this->tables['permissions'] . '
+            FROM ' . $this->prefix . 'permissions' . $this->suffix . '
             WHERE
                 PID <> :PID AND
                 name = :name
@@ -950,7 +945,7 @@ class Permissions
         }
 
         $stmt = $this->db->prepare('
-            UPDATE ' . $this->tables['permissions'] . ' SET
+            UPDATE ' . $this->prefix . 'permissions' . $this->suffix . ' SET
                 name = :name,
                 description = :description
             WHERE
@@ -983,7 +978,7 @@ class Permissions
         $stmt_user = $this->db->prepare('
             SELECT
                 UID
-            FROM ' . $this->tables['users'] . '
+            FROM ' . $this->prefix . 'users' . $this->suffix . '
             WHERE
                 UID = :UID
         ');
@@ -994,7 +989,7 @@ class Permissions
         // Get group with given ID
         $stmt_group = $this->db->prepare('
             SELECT
-                GID FROM ' . $this->tables['groups'] . '
+                GID FROM ' . $this->prefix . 'groups' . $this->suffix . '
             WHERE
                 GID = :GID
         ');
@@ -1008,7 +1003,7 @@ class Permissions
             $row_group = $stmt_group->fetchObject()
         ) {
             $stmt = $this->db->prepare('
-                INSERT INTO ' . $this->tables['user_groups'] . '(
+                INSERT INTO ' . $this->prefix . 'user_groups' . $this->suffix . '(
                     UID,
                     GID
                 ) VALUES(
@@ -1040,7 +1035,7 @@ class Permissions
     public function userGroupRemove($uid, $gid)
     {
         $stmt = $this->db->prepare('
-            DELETE FROM ' . $this->tables['user_groups'] . '
+            DELETE FROM ' . $this->prefix . 'user_groups' . $this->suffix . '
             WHERE
                 UID = :UID AND
                 GID = :GID
